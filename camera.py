@@ -1,7 +1,10 @@
 import cv2
+import numpy
 from pynput.keyboard import Key, Controller
 import torch
+from torchvision.transforms import ToTensor
 from model import *
+
 
 # #####################################################
 # 运行本文件前，需要确认：
@@ -18,11 +21,14 @@ from model import *
 # #####################################################
 
 def load_model(model_path):
-    myModel = torch.load(model_path)  # 读取Model
+    myModel = Model()
+    myModel.load_state_dict(torch.load(model_path).get('state_dict'))
+    myModel.eval()
+    print(myModel)
     return myModel
 
 
-def run_model(frame, model):
+def run_model(frame, model=None):
     return model(frame)
 
 
@@ -30,10 +36,11 @@ def demo(tick, size, model_path):  # 每秒取样数
     # reference: https://www.linuxprobe.com/python-linux-two.html
     print('开始')
     keyboard = Controller()
+    trans = ToTensor()
     cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)  # 电脑自身摄像头
     gap = 60 / tick  # 取样间隔
     i = 0
-    # load_model(model_path) #TODO 解除注释
+    myModel = load_model(model_path)
     while True:
         i += 1
         futari = False
@@ -43,12 +50,14 @@ def demo(tick, size, model_path):  # 每秒取样数
             frame = cv2.flip(frame, 1)  # 图片左右调换
             cv2.imshow('window', frame)
             # <logic>
-            # result = run_model(frame) # 将frame扔到模型里，输出分类结果 # TODO 解除注释
-            if cv2.waitKey(1) & 0xff == ord('c'): # test TODO 删除本行 按c测试切屏
-            # if result[0] > result[1]:  # TODO 解除注释
-                if futari: # 持续有人
+            frame = trans(frame)
+            frame = torch.reshape(frame, (1, 3, 32, 32))
+            result = run_model(frame, myModel)  # 将frame扔到模型里，输出分类结果
+            result = result[0]
+            if result[0] > result[1]:
+                if futari:  # 持续有人
                     pass
-                else: # 突然来个人，危
+                else:  # 突然来个人，危
                     futari = True
                     # 切屏，water
                     keyboard.press(Key.alt)
@@ -71,8 +80,8 @@ def demo(tick, size, model_path):  # 每秒取样数
 
 
 tick = 20
-size = (32,32)
-modelpath = ''
+size = (32, 32)
+modelpath = './model_best.pth.tar'
 
 demo(tick, size, modelpath)
 cv2.destroyAllWindows()

@@ -65,10 +65,10 @@ def main():
 
 
     #加载data
-    train_dataset = myDataset('./Dataset32', ToTensor)
+    train_dataset = myDataset('./Dataset32/train', ToTensor)
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
 
-    val_dataset = myDataset('./Dataset32', ToTensor)######改数据集文件
+    val_dataset = myDataset('./Dataset32/test', ToTensor)######改数据集文件
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=True)
 
     #训练时保存checkpoint
