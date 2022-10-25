@@ -24,7 +24,6 @@ def load_model(model_path):
     myModel = Model()
     myModel.load_state_dict(torch.load(model_path).get('state_dict'))
     myModel.eval()
-    print(myModel)
     return myModel
 
 
@@ -32,7 +31,14 @@ def run_model(frame, model=None):
     return model(frame)
 
 
-def demo(tick, size, model_path):  # 每秒取样数
+def tab(keyboard):
+    keyboard.press(Key.alt)
+    keyboard.press(Key.tab)
+    keyboard.release(Key.tab)
+    keyboard.release(Key.alt)
+
+
+def demo(tick, size, model_path, threshold):  # 每秒取样数
     # reference: https://www.linuxprobe.com/python-linux-two.html
     print('开始')
     keyboard = Controller()
@@ -41,9 +47,9 @@ def demo(tick, size, model_path):  # 每秒取样数
     gap = 60 / tick  # 取样间隔
     i = 0
     myModel = load_model(model_path)
+    futari = 0
     while True:
         i += 1
-        futari = False
         if i == gap:  # 定时
             reg, frame = cap.read()
             frame = cv2.resize(frame, size)
@@ -54,22 +60,26 @@ def demo(tick, size, model_path):  # 每秒取样数
             frame = torch.reshape(frame, (1, 3, 32, 32))
             result = run_model(frame, myModel)  # 将frame扔到模型里，输出分类结果
             result = result[0]
-            if result[0] > result[1]:
-                if futari:  # 持续有人
-                    pass
-                else:  # 突然来个人，危
-                    futari = True
-                    # 切屏，water
-                    keyboard.press(Key.alt)
-                    keyboard.press(Key.tab)
-                    keyboard.release(Key.tab)
-                    keyboard.release(Key.alt)
+            print(result[0].item(), result[1].item())
+            # 以下代码思路： 鉴于灵敏度有限，需要消除抖动
+            # futari标志位取值范围为0 ~ 2*threshold
+            # 当识别为两个人时 futari ++,通过threshold时切屏 ，==2*threshold则不++
+            # 识别为一个人时 futari--，==0则不--
+            if result[0].item() < result[1].item():
+                print('二人\t', '●' * futari)
+
+                if futari < 2 * threshold:
+                    futari += 1
+
+                if futari == threshold:
+                    tab(keyboard)
 
             else:
-                if futari:
-                    # 一个人的情况，还原标志位
-                    futari = False
-                pass  # 保证安全，手动切回
+                print('一人\t', '●' * futari)
+
+                if futari > 0:
+                    futari -= 1
+
             # </logic>
             i = 0  # 清零
             # 按Q停止
@@ -79,9 +89,10 @@ def demo(tick, size, model_path):  # 每秒取样数
     cap.release()
 
 
-tick = 20
+tick = 10
 size = (32, 32)
 modelpath = './model_best.pth.tar'
+threshold = 10  # 灵敏度
 
-demo(tick, size, modelpath)
+demo(tick, size, modelpath, threshold)
 cv2.destroyAllWindows()
