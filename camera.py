@@ -54,7 +54,7 @@ def demo(tick, size, model_path, threshold):  # 每秒取样数
             reg, frame = cap.read()
             frame = cv2.resize(frame, size)
             frame = cv2.flip(frame, 1)  # 图片左右调换
-            cv2.imshow('window', frame)
+            # cv2.imshow('window', frame)
             # <logic>
             frame = trans(frame)
             frame = torch.reshape(frame, (1, 3, 32, 32))

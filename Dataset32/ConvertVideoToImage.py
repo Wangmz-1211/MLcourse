@@ -20,7 +20,7 @@ i = 0  # 帧计数
 j = 0  # 图片计数
 timeF = 1  # 每隔1帧保存一张图片
 size = (32, 32)  # 压缩后图片的尺寸
-video_address = 'WIN_20221026_13_09_28_Pro.mp4'  # 视频文件
+video_address = 'WIN_20221026_13_42_05_Pro.mp4'  # 视频文件
 #   读取视频文件
 video = cv2.VideoCapture(video_address)
 #   读帧
@@ -32,7 +32,7 @@ while success:
     if i % timeF == 0:
         j = i + 1
         frame_zip = cv2.resize(frame, size)
-        save_image(frame_zip, 'image', j)
+        save_image(frame_zip, 'image1_11_today', j)
         print('save image:', j)
     success, frame = video.read()
 
